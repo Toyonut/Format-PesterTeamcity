@@ -19,7 +19,9 @@ function Format-PesterTeamcity {
             Mandatory = $true,
             ValueFromPipelineByPropertyName = $true
         )]
-        $TestResult
+        $TestResult,
+        # Output an exit code based on the number of failed tests.
+        [switch]$EnableExit
     )
 
     function Write-PassedTest ($testResult) {
@@ -42,6 +44,9 @@ function Format-PesterTeamcity {
     }
 
     $testSuiteNames = Get-TestSuiteNames -testResults $TestResult
+    $testFailedCount = @($TestResult | Where-Object {$_.result -eq "Failed"}).Count
+    
+    Write-Verbose "Failed test count: $testFailedCount"
 
     foreach ($suiteName in $testSuiteNames) {
         Write-Output "##teamcity[testSuiteStarted name='$($suitename)']"
@@ -49,6 +54,8 @@ function Format-PesterTeamcity {
         $testsInSuite = @($TestResult | Where-Object {$_.Context -eq $suiteName})
 
         foreach ($test in $testsInSuite) {
+            Write-Verbose $test
+
             if ($test.result -eq "Passed") {
                 Write-PassedTest $test
             }
@@ -59,4 +66,8 @@ function Format-PesterTeamcity {
 
         Write-Output "##teamcity[testSuiteFinished name='$($suitename)']"
     }
+
+    if ($EnableExit) {
+        exit $testFailedCount
+    }    
 }
