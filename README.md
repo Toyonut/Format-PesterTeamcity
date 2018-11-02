@@ -1,6 +1,6 @@
 # Format-PesterTeamcity
 
-This module is to help me learn more about powershell, and you get your pester tests into TeamCity.
+This module is to help me learn more about powershell, and all of us get get our pester tests into TeamCity.
 
 ## Use case
 
