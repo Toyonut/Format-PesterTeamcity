@@ -1,9 +1,23 @@
+<#
+.SYNOPSIS
+    Format Pester test output into something Teamcity can understand from the build logs.
+.EXAMPLE
+    Invoke-Pester -passthru | Format-PesterTeamcity
+.EXAMPLE
+    $testResult = Invoke-Pester -passthru | Format-PesterTeamcity
+    
+.INPUTS
+    Teamcity test object
+.OUTPUTS
+    Formatted test output in Teamcity format
+#>
 function Format-PesterTeamcity {
     [CmdletBinding()]
     param (
+        # TestResult object output from Pester.
         [Parameter(
-            Mandatory=$true,
-            ValueFromPipelineByPropertyName=$true
+            Mandatory = $true,
+            ValueFromPipelineByPropertyName = $true
         )]
         $TestResult
     )
@@ -37,7 +51,8 @@ function Format-PesterTeamcity {
         foreach ($test in $testsInSuite) {
             if ($test.result -eq "Passed") {
                 Write-PassedTest $test
-            } else {
+            }
+            else {
                 Write-FailedTest $test
             }
         }
