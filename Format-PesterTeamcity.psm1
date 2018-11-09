@@ -5,7 +5,7 @@
     Invoke-Pester -passthru | Format-PesterTeamcity
 .EXAMPLE
     $testResult = Invoke-Pester -passthru | Format-PesterTeamcity
-    
+
 .INPUTS
     Teamcity test object
 .OUTPUTS
@@ -24,50 +24,62 @@ function Format-PesterTeamcity {
         [switch]$EnableExit
     )
 
-    function Write-PassedTest ($testResult) {
-        Write-Output "##teamcity[testStarted name='$($testResult.Context).$($testResult.Name)']"
-        Write-Output "##teamcity[testFinished name='$($testResult.Context).$($testResult.Name)' duration='$($testResult.Time)']" 
-    }
+    begin {}
 
-    function Write-FailedTest ($testResult) {
-        Write-Output "##teamcity[testStarted name='$($testResult.Context).$($testResult.Name)']"
-        Write-Output "##teamcity[testFailed name='$($testResult.Context).$($testResult.Name)' Message='$($testResult.FailureMessage)' stacktrace='$($testResult.StackTrace)']"
-        Write-Output "##teamcity[testFinished name='$($testResult.Context).$($testResult.Name)' duration='$($testResult.Time)']"
-    }
-
-    function Get-TestSuiteNames ($testResults) {
-        return @($testResults.Context | Select-Object -Unique)
-    }
-    
-    If (-not $TestResult) {
-        Throw "No test results found."
-    }
-
-    $testSuiteNames = Get-TestSuiteNames -testResults $TestResult
-    $testFailedCount = @($TestResult | Where-Object {$_.result -eq "Failed"}).Count
-    
-    Write-Verbose "Failed test count: $testFailedCount"
-
-    foreach ($suiteName in $testSuiteNames) {
-        Write-Output "##teamcity[testSuiteStarted name='$($suitename)']"
-
-        $testsInSuite = @($TestResult | Where-Object {$_.Context -eq $suiteName})
-
-        foreach ($test in $testsInSuite) {
-            Write-Verbose $test
-
-            if ($test.result -eq "Passed") {
-                Write-PassedTest $test
-            }
-            else {
-                Write-FailedTest $test
-            }
+    process {
+        function Get-TestSuiteNames ($testResults) {
+            return @($testResults.Describe | Select-Object -Unique)
         }
 
-        Write-Output "##teamcity[testSuiteFinished name='$($suitename)']"
+        function Format-TCMessage ($message) {
+            return $message -replace [Regex]::Escape("|"), "||" `
+                            -replace [Regex]::Escape("'"), "|'" `
+                            -replace [Regex]::Escape("["), "|[" `
+                            -replace [Regex]::Escape("]"), "|]" `
+                            -replace [Regex]::Escape("`r`n"), "|n"
+        }
+
+        If (-not $TestResult) {
+            Throw "No test results found."
+        }
+
+        $testSuiteNames = Get-TestSuiteNames -testResults $TestResult
+        $failedTestCount = @($TestResult | Where-Object {$_.result -eq "Failed"}).Count
+
+        Write-Verbose "Failed test count: $failedTestCount"
+
+        foreach ($suiteName in $testSuiteNames) {
+            $suiteName = Format-TCMessage -message $suiteName
+
+            Write-Output "##teamcity[testSuiteStarted name='$($suitename)']"
+
+            $testsInSuite = @($TestResult | Where-Object {$_.Describe -eq $suiteName})
+
+            foreach ($test in $testsInSuite) {
+                Write-Verbose $test
+                $testName = Format-TCMessage -message "$($test.Describe).$($test.Name)"
+
+                if ($test.result -eq "Passed") {
+                    Write-Output "##teamcity[testStarted name='$($testname)']"
+                    Write-Output "##teamcity[testFinished name='$($testname)' duration='$($test.Time)']"
+                }
+                else {
+                    $failureMessage = Format-TCMessage -message $($test.FailureMessage)
+                    $stackTraceMessage = Format-TCMessage -message $($test.StackTrace)
+
+                    Write-Output "##teamcity[testStarted name='$($testname)']"
+                    Write-Output "##teamcity[testFailed name='$($testname)' Message='$($failureMessage)' stacktrace='$($stackTraceMessage)']"
+                    Write-Output "##teamcity[testFinished name='$($testname)' duration='$($test.Time)']"
+                }
+            }
+
+            Write-Output "##teamcity[testSuiteFinished name='$($suitename)']"
+        }
     }
 
-    if ($EnableExit) {
-        exit $testFailedCount
-    }    
+    end {
+        if ($EnableExit) {
+            exit $failedTestCount
+        }
+    }
 }
