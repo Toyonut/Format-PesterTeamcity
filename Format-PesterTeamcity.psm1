@@ -38,7 +38,7 @@ function Format-PesterTeamcity {
                             -replace [Regex]::Escape("]"), "|]" `
                             -replace [Regex]::Escape("`r`n"), "|n" `
                             -replace [Regex]::Escape("`n"), "|n" `
-                            -replace [Regex]::Escaps("`r"), "|r" `
+                            -replace [Regex]::Escape("`r"), "|r" `
                             -replace [Regex]::Escape("[char]u0085"), "|x" `
                             -replace [Regex]::Escape("[char]u2029"), "|p" `
                             -replace [Regex]::Escape("[char]u2028"), "|l"
