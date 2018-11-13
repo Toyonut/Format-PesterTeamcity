@@ -36,7 +36,12 @@ function Format-PesterTeamcity {
                             -replace [Regex]::Escape("'"), "|'" `
                             -replace [Regex]::Escape("["), "|[" `
                             -replace [Regex]::Escape("]"), "|]" `
-                            -replace [Regex]::Escape("`r`n"), "|n"
+                            -replace [Regex]::Escape("`r`n"), "|n" `
+                            -replace [Regex]::Escape("`n"), "|n" `
+                            -replace [Regex]::Escaps("`r"), "|r"
+                            -replace [Regex]::Escape("[char]u0085"), "|x"
+                            -replace [Regex]::Escape("[char]u2029"), "|p")
+                            -replace [Regex]::Escape("[char]u2028"), "|l")
         }
 
         If (-not $TestResult) {
@@ -60,16 +65,16 @@ function Format-PesterTeamcity {
                 $testName = Format-TCMessage -message "$($test.Describe).$($test.Name)"
 
                 if ($test.result -eq "Passed") {
-                    Write-Output "##teamcity[testStarted name='$($testname)']"
-                    Write-Output "##teamcity[testFinished name='$($testname)' duration='$($test.Time)']"
+                    Write-Output "##teamcity[testStarted name='$($testName)']"
+                    Write-Output "##teamcity[testFinished name='$($testName)' duration='$($test.Time)']"
                 }
                 else {
                     $failureMessage = Format-TCMessage -message $($test.FailureMessage)
                     $stackTraceMessage = Format-TCMessage -message $($test.StackTrace)
 
-                    Write-Output "##teamcity[testStarted name='$($testname)']"
-                    Write-Output "##teamcity[testFailed name='$($testname)' Message='$($failureMessage)' stacktrace='$($stackTraceMessage)']"
-                    Write-Output "##teamcity[testFinished name='$($testname)' duration='$($test.Time)']"
+                    Write-Output "##teamcity[testStarted name='$($testName)']"
+                    Write-Output "##teamcity[testFailed name='$($testName)' Message='$($failureMessage)' stacktrace='$($stackTraceMessage)']"
+                    Write-Output "##teamcity[testFinished name='$($testName)' duration='$($test.Time)']"
                 }
             }
 
