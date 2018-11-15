@@ -73,7 +73,7 @@ function Format-PesterTeamcity {
                     $stackTraceMessage = Format-TCMessage -message $($test.StackTrace)
 
                     Write-Output "##teamcity[testStarted name='$($testName)']"
-                    Write-Output "##teamcity[testFailed name='$($testName)' Message='$($failureMessage)' stacktrace='$($stackTraceMessage)']"
+                    Write-Output "##teamcity[testFailed name='$($testName)' message='$($failureMessage)' details='$($stackTraceMessage)']"
                     Write-Output "##teamcity[testFinished name='$($testName)' duration='$($test.Time)']"
                 }
             }
